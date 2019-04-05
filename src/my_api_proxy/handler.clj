@@ -3,7 +3,9 @@
             [ring.util.http-response :refer :all]
             [ring.swagger.swagger-ui :as su]
             [ring.swagger.validator :as sv]
-            [schema.core :as s]))
+            [schema.core :as s]
+            [my-api-proxy.api-doc-proxy :as proxy]
+            ))
 
 sv/validate
 
@@ -16,7 +18,7 @@ sv/validate
 
 (def app
   (api
-    {:swagger
+    #_{:swagger
      {:ui "/"
       :spec "/swagger.json"
       :data {:info {:title "My-api-proxy"
@@ -24,20 +26,31 @@ sv/validate
              :tags [{:name "api", :description "some apis"}]}}}
 
     (context "/api" []
-      :tags ["api"]
+             :tags ["api"]
 
-      (GET "/plus" []
-        :return {:result Long}
-        :query-params [x :- Long, y :- Long]
-        :summary "adds two numbers together"
-        (ok {:result (+ x y)}))
+             (GET "/plus" []
+                  :return {:result Long}
+                  :query-params [x :- Long, y :- Long]
+                  :summary "adds two numbers together"
+                  (ok {:result (+ x y)}))
 
-      (POST "/echo" []
-        :return Pizza
-        :body [pizza Pizza]
-        :summary "echoes a Pizza"
-        (ok pizza)))
+             (POST "/echo" []
+                   :return Pizza
+                   :body [pizza Pizza]
+                   :summary "echoes a Pizza"
+                   (ok pizza))
+             )
+
+    (GET "/show-req" request
+         (ok (str request))
+         )
+
+    (GET "/doc.json" []
+         ; :return String
+         (proxy/doc-proxy)
+         #_(ok (proxy/doc-proxy)))
+
     (su/swagger-ui {:path "/my-api-doc"
-                    :swagger-docs "http://localhost:3000/swagger.json"
+                    :swagger-docs "/doc.json"
                     })
     ))
