@@ -18,7 +18,7 @@ sv/validate
 
 (def app
   (api
-    #_{:swagger
+    {:swagger
      {:ui "/"
       :spec "/swagger.json"
       :data {:info {:title "My-api-proxy"
@@ -28,17 +28,29 @@ sv/validate
     (context "/api" []
              :tags ["api"]
 
-             (GET "/plus" []
+             #_(GET "/plus" []
                   :return {:result Long}
                   :query-params [x :- Long, y :- Long]
                   :summary "adds two numbers together"
                   (ok {:result (+ x y)}))
 
-             (POST "/echo" []
+             #_(POST "/echo" []
                    :return Pizza
                    :body [pizza Pizza]
                    :summary "echoes a Pizza"
                    (ok pizza))
+
+             (GET "/plus" req
+                  ; :return {:result Long}
+                  ; :query-params [x :- Long, y :- Long]
+                  ; :summary "adds two numbers together"
+                  (proxy/remote-plus req))
+
+             (POST "/echo" req
+                   ; :return Pizza
+                   ; :body [pizza Pizza]
+                   ; :summary "echoes a Pizza"
+                   (proxy/remote-echo req))
              )
 
     (GET "/show-req" request
