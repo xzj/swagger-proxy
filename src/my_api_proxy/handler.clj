@@ -4,6 +4,7 @@
             [ring.swagger.swagger-ui :as su]
             [ring.swagger.validator :as sv]
             [schema.core :as s]
+            [compojure.core :as cc]
             [my-api-proxy.api-doc-proxy :as proxy]
             ))
 
@@ -25,7 +26,7 @@ sv/validate
                     :description "Compojure Api example"}
              :tags [{:name "api", :description "some apis"}]}}}
 
-    (context "/api" []
+    #_(context "/api" []
              :tags ["api"]
 
              #_(GET "/plus" []
@@ -40,13 +41,13 @@ sv/validate
                    :summary "echoes a Pizza"
                    (ok pizza))
 
-             (GET "/plus" req
+             #_(GET "/plus" req
                   ; :return {:result Long}
                   ; :query-params [x :- Long, y :- Long]
                   ; :summary "adds two numbers together"
                   (proxy/remote-plus req))
 
-             (POST "/echo" req
+             #_(POST "/echo" req
                    ; :return Pizza
                    ; :body [pizza Pizza]
                    ; :summary "echoes a Pizza"
@@ -62,7 +63,10 @@ sv/validate
          (proxy/doc-proxy)
          #_(ok (proxy/doc-proxy)))
 
-    (su/swagger-ui {:path "/my-api-doc"
-                    :swagger-docs "/doc.json"
-                    })
+    (undocumented
+      (su/swagger-ui {:path "/my-api-doc"
+                      :swagger-docs "/doc.json"
+                      })
+      (cc/rfn req (proxy/remote-req 5000 req))
+      )
     ))

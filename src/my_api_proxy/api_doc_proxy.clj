@@ -1,20 +1,20 @@
 (ns my-api-proxy.api-doc-proxy
     (:require [clj-http.client :as client]
-              [cheshire.core :as cc]
+              [cheshire.core :as chc]
               )
     )
 
 (defn doc-proxy []
   (let [spec-url "http://localhost:5000/swagger.json"
-        remove-path "/api/plus"
+        remove-path "/api/plus10"
         resp (client/get spec-url)
         {:keys [body headers]} resp
-        body (-> body cc/parse-string)
+        body (-> body chc/parse-string)
         paths (get body "paths")
         paths (dissoc paths remove-path)
         body (assoc body "paths" paths)
         headers (dissoc headers "content-length")
-        resp (assoc resp :headers headers :body (cc/generate-string body))
+        resp (assoc resp :headers headers :body (chc/generate-string body))
         ]
     (println " ==== resp: " resp)
     (println)
