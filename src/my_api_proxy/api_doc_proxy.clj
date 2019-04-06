@@ -27,7 +27,7 @@
   (let [{:keys [headers body server-name scheme uri request-method protocol query-string] :as req} req
         headers (dissoc headers "content-length")
         ]
-    (client/request {:server-port port :server-name server-name :request-method request-method :scheme scheme :uri uri :protocol protocol :query-string query-string :body body :headers headers})
+    (client/request {:server-port port :server-name server-name :request-method request-method :scheme scheme :uri uri :protocol protocol :query-string query-string :body body :headers headers :throw-exceptions false})
     )
   )
 
