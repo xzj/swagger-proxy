@@ -19,10 +19,17 @@
     )
   )
 
-(defn doc-proxy []
+(defn get-filter-rules-for [id]
+  (let [filter-rules {"abc" ["/api/pl" "/api/e"]}]
+    (get filter-rules id)
+    )
+  )
+
+(defn doc-proxy-for [id]
   (let [spec-url "http://localhost:5000/swagger.json"
         ; remove-path "/api/plus10"
-        filter-rules ["/api/pl" "/api/e"]
+        ; filter-rules ["/api/pl" "/api/e"]
+        filter-rules (get-filter-rules-for id)
         resp (client/get spec-url)
         {:keys [body headers]} resp
         body (filter-apis filter-rules body)

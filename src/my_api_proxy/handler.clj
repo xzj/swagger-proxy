@@ -58,14 +58,14 @@ sv/validate
          (ok (str request))
          )
 
-    (GET "/doc.json" []
+    (GET "/doc.json/:id" [id]
          ; :return String
-         (proxy/doc-proxy)
+         (proxy/doc-proxy-for id)
          #_(ok (proxy/doc-proxy)))
 
     (undocumented
-      (su/swagger-ui {:path "/my-api-doc"
-                      :swagger-docs "/doc.json"
+      (su/swagger-ui {:path "/my-api-doc/abc"
+                      :swagger-docs "/doc.json/abc"
                       })
       (cc/rfn req (proxy/remote-req 5000 req))
       )
