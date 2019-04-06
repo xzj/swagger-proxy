@@ -4,17 +4,36 @@
               )
     )
 
+(defn should-retain-path? [filter-rules [path end-point-spec :as path-spec]]
+  (some #(clojure.string/starts-with? path %) filter-rules)
+  )
+
+(defn filter-apis [filter-rules swagger-json-str]
+  (let [swagger-spec (chc/parse-string swagger-json-str)
+        paths-spec (get swagger-spec "paths")
+        paths-spec (filter (partial should-retain-path? filter-rules) paths-spec)
+        paths-spec (into {} paths-spec)
+        swagger-spec (assoc swagger-spec "paths" paths-spec)
+        ]
+    (chc/generate-string swagger-spec)
+    )
+  )
+
 (defn doc-proxy []
   (let [spec-url "http://localhost:5000/swagger.json"
-        remove-path "/api/plus10"
+        ; remove-path "/api/plus10"
+        filter-rules ["/api/pl" "/api/e"]
         resp (client/get spec-url)
         {:keys [body headers]} resp
-        body (-> body chc/parse-string)
-        paths (get body "paths")
-        paths (dissoc paths remove-path)
-        body (assoc body "paths" paths)
+        body (filter-apis filter-rules body)
+
+        ; body (-> body chc/parse-string)
+        ; paths (get body "paths")
+        ; paths (dissoc paths remove-path)
+        ; body (assoc body "paths" paths)
         headers (dissoc headers "content-length")
-        resp (assoc resp :headers headers :body (chc/generate-string body))
+        ; resp (assoc resp :headers headers :body (chc/generate-string body))
+        resp (assoc resp :headers headers :body body)
         ]
     (println " ==== resp: " resp)
     (println)
