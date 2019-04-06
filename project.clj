@@ -3,6 +3,7 @@
    :dependencies [[org.clojure/clojure "1.8.0"]
                   [metosin/compojure-api "1.1.11"]
                   [clj-http "3.9.1"]
+                  [cheshire "5.8.1"]
                   ]
    :ring {:handler my-api-proxy.handler/app}
    :uberjar-name "server.jar"
