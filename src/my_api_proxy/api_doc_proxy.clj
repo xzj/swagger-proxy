@@ -1,8 +1,27 @@
 (ns my-api-proxy.api-doc-proxy
     (:require [clj-http.client :as client]
               [cheshire.core :as chc]
+              [compojure.api.sweet :as cas]
+              [ring.swagger.swagger-ui :as su]
               )
     )
+
+(defn all-filter-rules []
+  {"abc" ["/api/pl" #_"/api/e"]}
+  )
+
+(defn swagger-ui-routes [filter-rules]
+  (let [ui-specs (map
+                   (fn [[id _]]
+                       {:path (str "/my-api-doc/" id)
+                        :swagger-docs (str "/doc.json/" id)
+                        })
+                   filter-rules)
+        ui-routes (map su/swagger-ui ui-specs)
+        ]
+    (apply cas/undocumented ui-routes)
+    )
+  )
 
 (defn should-retain-path? [filter-rules [path end-point-spec :as path-spec]]
   (some #(clojure.string/starts-with? path %) filter-rules)
@@ -20,7 +39,7 @@
   )
 
 (defn get-filter-rules-for [id]
-  (let [filter-rules {"abc" ["/api/pl" "/api/e"]}]
+  (let [filter-rules (all-filter-rules)]
     (get filter-rules id)
     )
   )
