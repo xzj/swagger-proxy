@@ -24,6 +24,7 @@
    :api-doc-filter-rules {
                           "abc" ["/api/pl" #_"/api/e"]
                           "def" [#_"/api/pl" "/api/e"]
+                          "mobile" ["/mobile/"]
                           }
    }
   )
@@ -112,10 +113,16 @@
   )
 
 (defn forward-req [{:keys [server-port server-name scheme] :or {server-port 3000 server-name "localhost" scheme :http}} req]
-  (let [{:keys [headers body #_server-name #_scheme uri request-method protocol query-string] :as req} req
+  (let [{:keys [headers body #_server-name #_scheme uri request-method protocol query-string form-params] :as req} req
         headers (dissoc headers "content-length")
+        api-req {:server-port server-port :server-name server-name :scheme scheme :request-method request-method
+                 :uri uri :protocol protocol :query-string query-string :body body :headers headers
+                 #_:form-params #_form-params :throw-exceptions false}
+        api-req (if (seq form-params) (assoc api-req :form-params form-params) api-req)
         ]
-    (client/request {:server-port server-port :server-name server-name :scheme scheme :request-method request-method :uri uri :protocol protocol :query-string query-string :body body :headers headers :throw-exceptions false})
+    (println)
+    (println " ====== forward req: " req)
+    (client/request api-req)
     )
   )
 
