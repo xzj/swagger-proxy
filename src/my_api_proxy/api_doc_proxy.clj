@@ -15,7 +15,6 @@
                   :server-port 5000
                   :uri "/swagger.json"
                   :scheme :http
-                  ; :protocol "HTTP/1.1"
                   }
    :api-server-conf {
                      :server-name "localhost"
@@ -90,20 +89,12 @@
 
 (defn doc-proxy-for [id]
   (let [spec-url "http://localhost:5000/swagger.json"
-        ; remove-path "/api/plus10"
-        ; filter-rules ["/api/pl" "/api/e"]
         filter-rules (get-filter-rules-for id)
-        ; resp (client/get spec-url)
         resp (access-swagger)
         {:keys [body headers]} resp
         body (filter-apis filter-rules body)
 
-        ; body (-> body chc/parse-string)
-        ; paths (get body "paths")
-        ; paths (dissoc paths remove-path)
-        ; body (assoc body "paths" paths)
         headers (dissoc headers "content-length")
-        ; resp (assoc resp :headers headers :body (chc/generate-string body))
         resp (assoc resp :headers headers :body body)
         resp (assoc-in resp [:headers "Set-Cookie"] (str "consumer-id=" id "; Path=/"))
         ]
@@ -124,46 +115,26 @@
 
 (defn forward-req
   [{:keys [server-port server-name scheme] :or {server-port 3000 server-name "localhost" scheme :http}}
-   {:keys [headers body #_server-name #_scheme uri request-method protocol query-string form-params] :as req}
+   {:keys [headers body uri request-method protocol query-string form-params] :as req}
    ]
   (if (can-access-api? req)
-    (let [;{:keys [headers body #_server-name #_scheme uri request-method protocol query-string form-params] :as req} req
-        consumer-id (get-consumer-id headers)
-        headers (dissoc headers "content-length")
-        api-req {:server-port server-port :server-name server-name :scheme scheme :request-method request-method
-                 :uri uri :protocol protocol :query-string query-string :body body :headers headers
-                 #_:form-params #_form-params :throw-exceptions false}
-        api-req (if (seq form-params) (assoc api-req :form-params form-params) api-req)
-        ]
-    (println)
-    (println " ====== forward req: " req)
-    (client/request api-req)
-    )
+    (let [consumer-id (get-consumer-id headers)
+          headers (dissoc headers "content-length")
+          api-req {:server-port server-port :server-name server-name :scheme scheme :request-method request-method
+                   :uri uri :protocol protocol :query-string query-string :body body :headers headers
+                   :throw-exceptions false}
+          api-req (if (seq form-params) (assoc api-req :form-params form-params) api-req)
+          ]
+      (println)
+      (println " ====== forward req: " req)
+      (client/request api-req)
+      )
     (resp/not-found)
     )
   )
 
 (defn forward-api-route []
   (cas/undocumented
-      (cc/rfn req (-> (api-server-conf) (forward-req req)))
-      )
-  )
-
-#_(defn remote-plus [req]
-  (println (str "req: " req))
-  ; (client/request (-> (assoc req :server-port 5000 #_:params #_{:x 1 :y 2}) (dissoc :query-params)))
-  (forward-req 5000 req)
-  )
-
-#_(defn remote-echo [req]
-  (println (str "req: " req))
-  (let [{:keys [headers body server-name scheme uri request-method protocol query-string] :as req} req
-        ; req (update-in req [:headers] #(dissoc % "content-length"))
-        headers (dissoc headers "content-length")
-        ]
-    ; (println)
-    ; (client/request {:url "http://localhost:5000/api/echo" :method :post :body body :headers headers #_:content-type #_:json})
-    ; (client/request {:server-port 5000 :server-name server-name :request-method request-method :scheme scheme :uri uri :protocol protocol :query-string query-string :body body :headers headers #_:content-type #_:json})
-    (forward-req 5000 req)
+    (cc/rfn req (-> (api-server-conf) (forward-req req)))
     )
   )
