@@ -1,6 +1,7 @@
 (ns my-api-proxy.api-doc-proxy
     (:require [clj-http.client :as client]
               [cheshire.core :as chc]
+              [ring.util.http-response :as resp]
               [compojure.api.sweet :as cas]
               [compojure.core :as cc]
               [ring.swagger.swagger-ui :as su]
@@ -113,8 +114,21 @@
   #_"{\"swagger\":\"2.0\",\"info\":{\"title\":\"My-api\",\"version\":\"0.0.1\",\"description\":\"Compojure Api example\"},\"produces\":[\"application/json\",\"application/x-yaml\",\"application/edn\",\"application/transit+json\",\"application/transit+msgpack\"],\"consumes\":[\"application/json\",\"application/x-yaml\",\"application/edn\",\"application/transit+json\",\"application/transit+msgpack\"],\"basePath\":\"/\",\"paths\":{\"/api/plus\":{\"get\":{\"tags\":[\"api\"],\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Response17224\"},\"description\":\"\"}},\"parameters\":[{\"in\":\"query\",\"name\":\"x\",\"description\":\"\",\"required\":true,\"type\":\"integer\",\"format\":\"int64\"},{\"in\":\"query\",\"name\":\"y\",\"description\":\"\",\"required\":true,\"type\":\"integer\",\"format\":\"int64\"}],\"summary\":\"adds two numbers together\"}},\"/api/echo\":{\"post\":{\"tags\":[\"api\"],\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Pizza\"},\"description\":\"\"}},\"parameters\":[{\"in\":\"body\",\"name\":\"Pizza\",\"description\":\"\",\"required\":true,\"schema\":{\"$ref\":\"#/definitions/Pizza\"}}],\"summary\":\"echoes a Pizza\"}}},\"tags\":[{\"name\":\"api\",\"description\":\"some apis\"}],\"definitions\":{\"Pizza\":{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"},\"description\":{\"type\":\"string\"},\"size\":{\"type\":\"string\",\"enum\":[\"L\",\"M\",\"S\"]},\"origin\":{\"$ref\":\"#/definitions/PizzaOrigin\"}},\"additionalProperties\":false,\"required\":[\"name\",\"size\",\"origin\"]},\"PizzaOrigin\":{\"type\":\"object\",\"properties\":{\"country\":{\"type\":\"string\",\"enum\":[\"PO\",\"FI\"]},\"city\":{\"type\":\"string\"}},\"additionalProperties\":false,\"required\":[\"country\",\"city\"]},\"Response17224\":{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"integer\",\"format\":\"int64\"}},\"additionalProperties\":false,\"required\":[\"result\"]}}}"
   )
 
-(defn forward-req [{:keys [server-port server-name scheme] :or {server-port 3000 server-name "localhost" scheme :http}} req]
-  (let [{:keys [headers body #_server-name #_scheme uri request-method protocol query-string form-params] :as req} req
+(defn get-consumer-id [headers]
+  (some->> (get headers "cookie") (re-find #"\W?consumer-id=(\w+)") second)
+  )
+
+(defn can-access-api? [{:keys [headers scheme uri request-method protocol] :as req}]
+  (some-> (get-consumer-id headers) get-filter-rules-for (should-retain-path? [uri]))
+  )
+
+(defn forward-req
+  [{:keys [server-port server-name scheme] :or {server-port 3000 server-name "localhost" scheme :http}}
+   {:keys [headers body #_server-name #_scheme uri request-method protocol query-string form-params] :as req}
+   ]
+  (if (can-access-api? req)
+    (let [;{:keys [headers body #_server-name #_scheme uri request-method protocol query-string form-params] :as req} req
+        consumer-id (get-consumer-id headers)
         headers (dissoc headers "content-length")
         api-req {:server-port server-port :server-name server-name :scheme scheme :request-method request-method
                  :uri uri :protocol protocol :query-string query-string :body body :headers headers
@@ -124,6 +138,8 @@
     (println)
     (println " ====== forward req: " req)
     (client/request api-req)
+    )
+    (resp/not-found)
     )
   )
 
