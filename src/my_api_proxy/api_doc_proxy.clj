@@ -104,6 +104,7 @@
         headers (dissoc headers "content-length")
         ; resp (assoc resp :headers headers :body (chc/generate-string body))
         resp (assoc resp :headers headers :body body)
+        resp (assoc-in resp [:headers "Set-Cookie"] (str "consumer-id=" id "; Path=/"))
         ]
     (println " ==== resp: " resp)
     (println)
