@@ -19,7 +19,7 @@ sv/validate
 
 (def app
   (api
-    {:swagger
+    #_{:swagger
      {:ui "/"
       :spec "/swagger.json"
       :data {:info {:title "My-api-proxy"
@@ -71,6 +71,6 @@ sv/validate
                       })
       )
     (undocumented
-      (cc/rfn req (proxy/remote-req 5000 req))
+      (cc/rfn req (-> (proxy/api-server-conf) (proxy/forward-req #_{:server-port 5000} req)))
       )
     ))

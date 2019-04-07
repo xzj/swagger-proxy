@@ -6,8 +6,37 @@
               )
     )
 
+(defn conf []
+  {
+   :swagger-conf {
+                  :server-name "localhost"
+                  :server-port 5000
+                  :uri "/swagger.json"
+                  :scheme :http
+                  ; :protocol "HTTP/1.1"
+                  }
+   :api-server-conf {
+                     :server-name "localhost"
+                     :server-port 5000
+                     :scheme :http
+                     }
+   :api-doc-filter-rules {
+                          "abc" ["/api/pl" #_"/api/e"]
+                          "def" [#_"/api/pl" "/api/e"]
+                          }
+   }
+  )
+
 (defn all-filter-rules []
-  {"abc" ["/api/pl" #_"/api/e"]}
+  (:api-doc-filter-rules (conf))
+  )
+
+(defn swagger-conf []
+  (:swagger-conf (conf))
+  )
+
+(defn api-server-conf []
+  (:api-server-conf (conf))
   )
 
 (defn swagger-ui-routes [filter-rules]
@@ -44,12 +73,21 @@
     )
   )
 
+(defn access-swagger []
+  (let [swagger-req (swagger-conf)
+        swagger-req (assoc swagger-req :request-method :get)
+        ]
+    (client/request swagger-req)
+    )
+  )
+
 (defn doc-proxy-for [id]
   (let [spec-url "http://localhost:5000/swagger.json"
         ; remove-path "/api/plus10"
         ; filter-rules ["/api/pl" "/api/e"]
         filter-rules (get-filter-rules-for id)
-        resp (client/get spec-url)
+        ; resp (client/get spec-url)
+        resp (access-swagger)
         {:keys [body headers]} resp
         body (filter-apis filter-rules body)
 
@@ -68,21 +106,21 @@
   #_"{\"swagger\":\"2.0\",\"info\":{\"title\":\"My-api\",\"version\":\"0.0.1\",\"description\":\"Compojure Api example\"},\"produces\":[\"application/json\",\"application/x-yaml\",\"application/edn\",\"application/transit+json\",\"application/transit+msgpack\"],\"consumes\":[\"application/json\",\"application/x-yaml\",\"application/edn\",\"application/transit+json\",\"application/transit+msgpack\"],\"basePath\":\"/\",\"paths\":{\"/api/plus\":{\"get\":{\"tags\":[\"api\"],\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Response17224\"},\"description\":\"\"}},\"parameters\":[{\"in\":\"query\",\"name\":\"x\",\"description\":\"\",\"required\":true,\"type\":\"integer\",\"format\":\"int64\"},{\"in\":\"query\",\"name\":\"y\",\"description\":\"\",\"required\":true,\"type\":\"integer\",\"format\":\"int64\"}],\"summary\":\"adds two numbers together\"}},\"/api/echo\":{\"post\":{\"tags\":[\"api\"],\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Pizza\"},\"description\":\"\"}},\"parameters\":[{\"in\":\"body\",\"name\":\"Pizza\",\"description\":\"\",\"required\":true,\"schema\":{\"$ref\":\"#/definitions/Pizza\"}}],\"summary\":\"echoes a Pizza\"}}},\"tags\":[{\"name\":\"api\",\"description\":\"some apis\"}],\"definitions\":{\"Pizza\":{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"},\"description\":{\"type\":\"string\"},\"size\":{\"type\":\"string\",\"enum\":[\"L\",\"M\",\"S\"]},\"origin\":{\"$ref\":\"#/definitions/PizzaOrigin\"}},\"additionalProperties\":false,\"required\":[\"name\",\"size\",\"origin\"]},\"PizzaOrigin\":{\"type\":\"object\",\"properties\":{\"country\":{\"type\":\"string\",\"enum\":[\"PO\",\"FI\"]},\"city\":{\"type\":\"string\"}},\"additionalProperties\":false,\"required\":[\"country\",\"city\"]},\"Response17224\":{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"integer\",\"format\":\"int64\"}},\"additionalProperties\":false,\"required\":[\"result\"]}}}"
   )
 
-(defn remote-req [port req]
-  (let [{:keys [headers body server-name scheme uri request-method protocol query-string] :as req} req
+(defn forward-req [{:keys [server-port server-name scheme] :or {server-port 3000 server-name "localhost" scheme :http}} req]
+  (let [{:keys [headers body #_server-name #_scheme uri request-method protocol query-string] :as req} req
         headers (dissoc headers "content-length")
         ]
-    (client/request {:server-port port :server-name server-name :request-method request-method :scheme scheme :uri uri :protocol protocol :query-string query-string :body body :headers headers :throw-exceptions false})
+    (client/request {:server-port server-port :server-name server-name :scheme scheme :request-method request-method :uri uri :protocol protocol :query-string query-string :body body :headers headers :throw-exceptions false})
     )
   )
 
-(defn remote-plus [req]
+#_(defn remote-plus [req]
   (println (str "req: " req))
   ; (client/request (-> (assoc req :server-port 5000 #_:params #_{:x 1 :y 2}) (dissoc :query-params)))
-  (remote-req 5000 req)
+  (forward-req 5000 req)
   )
 
-(defn remote-echo [req]
+#_(defn remote-echo [req]
   (println (str "req: " req))
   (let [{:keys [headers body server-name scheme uri request-method protocol query-string] :as req} req
         ; req (update-in req [:headers] #(dissoc % "content-length"))
@@ -91,6 +129,6 @@
     ; (println)
     ; (client/request {:url "http://localhost:5000/api/echo" :method :post :body body :headers headers #_:content-type #_:json})
     ; (client/request {:server-port 5000 :server-name server-name :request-method request-method :scheme scheme :uri uri :protocol protocol :query-string query-string :body body :headers headers #_:content-type #_:json})
-    (remote-req 5000 req)
+    (forward-req 5000 req)
     )
   )
