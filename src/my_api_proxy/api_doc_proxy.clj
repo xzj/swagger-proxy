@@ -2,6 +2,7 @@
     (:require [clj-http.client :as client]
               [cheshire.core :as chc]
               [compojure.api.sweet :as cas]
+              [compojure.core :as cc]
               [ring.swagger.swagger-ui :as su]
               )
     )
@@ -39,7 +40,7 @@
   (:api-server-conf (conf))
   )
 
-(defn swagger-ui-routes [filter-rules]
+(defn swagger-ui-routes-for [filter-rules]
   (let [ui-specs (map
                    (fn [[id _]]
                        {:path (str "/my-api-doc/" id)
@@ -50,6 +51,10 @@
         ]
     (apply cas/undocumented ui-routes)
     )
+  )
+
+(defn swagger-ui-routes []
+  (swagger-ui-routes-for (all-filter-rules))
   )
 
 (defn should-retain-path? [filter-rules [path end-point-spec :as path-spec]]
@@ -112,6 +117,12 @@
         ]
     (client/request {:server-port server-port :server-name server-name :scheme scheme :request-method request-method :uri uri :protocol protocol :query-string query-string :body body :headers headers :throw-exceptions false})
     )
+  )
+
+(defn forward-api-route []
+  (cas/undocumented
+      (cc/rfn req (-> (api-server-conf) (forward-req req)))
+      )
   )
 
 #_(defn remote-plus [req]

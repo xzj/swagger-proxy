@@ -63,14 +63,15 @@ sv/validate
          (proxy/doc-proxy-for id)
          #_(ok (proxy/doc-proxy)))
 
-    (proxy/swagger-ui-routes (proxy/all-filter-rules))
+    (proxy/swagger-ui-routes)
+    (proxy/forward-api-route)
 
     #_(undocumented
       (su/swagger-ui {:path "/my-api-doc/abc"
                       :swagger-docs "/doc.json/abc"
                       })
       )
-    (undocumented
+    #_(undocumented
       (cc/rfn req (-> (proxy/api-server-conf) (proxy/forward-req #_{:server-port 5000} req)))
       )
     ))
