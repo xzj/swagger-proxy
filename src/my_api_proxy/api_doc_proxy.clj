@@ -110,7 +110,9 @@
   )
 
 (defn can-access-api? [{:keys [headers scheme uri request-method protocol] :as req}]
-  (some-> (get-consumer-id headers) get-filter-rules-for (should-retain-path? [uri]))
+  ; (some-> (get-consumer-id headers) get-filter-rules-for (should-retain-path? [uri]))
+  (and
+    (not= uri "/") (not= uri "/index.html") (not= uri "/swagger.json"))
   )
 
 (defn forward-req
